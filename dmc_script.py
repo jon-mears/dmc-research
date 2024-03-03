@@ -8,13 +8,6 @@ def SHO(x):
     """
     return x**2/2
 
-
-def SHO(x):
-    """
-    Simple Harmonic Oscillator potential
-    """
-    return x**2 / 2
-
 def doMCSteps(mcsteps=1000, ds=0.1, nWalkers=1000, minX=-3.0, maxX=3.0,
               numBins=30, V=SHO, oldWalkers=None, oldHist=None, alpha=1.0):
     vrefs = [] 
