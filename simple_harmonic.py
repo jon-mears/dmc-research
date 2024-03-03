@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
+
 
 class Particle:
     def __init__(self, mass, position=None):
@@ -10,11 +12,12 @@ class Particle:
             self.position = position
 
 class DMCSimulation:
-    def __init__(self, n_walkers=100, equilibrium_position=5.0, k=1.0, mass=10.0, dt=10.0, duration=1000):
+    def __init__(self, n_walkers=1000, equilibrium_position=5.0, k=1.0, mass=1, dt=10.0, duration=100):
         self.equilibrium_position = equilibrium_position
         self.k = k
         self.dt = dt
         self.duration = duration
+        self.n_walkers = n_walkers
         # Initialize particles with a specified mass and random positions
         self.particles = [Particle(mass) for _ in range(n_walkers)]
         # Tracking variables
@@ -25,7 +28,7 @@ class DMCSimulation:
     def potential_energy(self, x):
         return 0.5 * self.k * (x - self.equilibrium_position) ** 2
 
-    def run_simulation(self):
+    def DMC_ALGORITHM(self):
         for _ in range(self.duration):
             new_particles = []
             potential_energies = []
@@ -37,13 +40,20 @@ class DMCSimulation:
                 pe = self.potential_energy(particle.position)
                 potential_energies.append(pe)
 
-            reference_energy = np.mean(potential_energies)
+            average_potential_energy = np.mean(potential_energies)
+
+            current_population_size = len(self.particles)
+            penalty = (1.0 - current_population_size / self.n_walkers) / (2.0 * self.dt)
+            reference_energy = np.mean(potential_energies) + penalty
             self.reference_energies.append(reference_energy)
+        
+
 
             for particle in self.particles:
                 pe = self.potential_energy(particle.position)
                 prob_delete = np.exp(-(pe - reference_energy) * self.dt)
                 prob_replicate = np.exp(-(pe - reference_energy) * self.dt) - 1.0
+                print(prob_delete, prob_replicate)
                 rand_num = np.random.rand()
 
                 if prob_delete >= rand_num:
@@ -58,33 +68,47 @@ class DMCSimulation:
 
     def analyze_simulation(self):
 
-        plt.figure(figsize=(12, 4))
-        plt.subplot(1, 3, 1)
+        plt.figure(figsize=(6, 4))
         plt.plot(self.reference_energies)
         plt.title('Reference Energy Over Time')
         plt.xlabel('Time Step')
         plt.ylabel('Reference Energy')
+        plt.show()  
 
-        # Plot walker count over time
-        plt.subplot(1, 3, 2)
+        
+        plt.figure(figsize=(6, 4))
         plt.plot(self.walker_counts)
         plt.title('Walker Count Over Time')
         plt.xlabel('Time Step')
         plt.ylabel('Number of Walkers')
+        plt.show()  
 
-        # Plot distribution of walker positions
-        plt.subplot(1, 3, 3)
-        plt.hist(self.positions, bins=30, density=True)
+        
+        plt.figure(figsize=(6, 4))
+        plt.hist(self.all_positions, bins=30, density=True)
         plt.title('Distribution of Walker Positions')
         plt.xlabel('Position')
         plt.ylabel('Density')
+        plt.show() 
 
-        plt.tight_layout()
+        kde = gaussian_kde(self.all_positions, bw_method=0.015)
+        x_grid = np.linspace(min(self.all_positions), max(self.all_positions), 1000)  # Adjust the range based on walker positions
+        kde_values = kde.evaluate(x_grid)
+
+        # Plotting the density of walkers
+        plt.figure(figsize=(10, 5))
+        plt.plot(x_grid, kde_values, color='blue', label='Walker Density')
+        plt.title("Walker Density")
+        plt.xlabel("x")
+        plt.ylabel("ρ(x)")
+        plt.grid(False)
+        plt.legend()
         plt.show()
 
 
+
 simulation = DMCSimulation()
-simulation.run_simulation()
+simulation.DMC_ALGORITHM()
 simulation.analyze_simulation()
 
 
