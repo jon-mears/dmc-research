@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde
 
 
 class Particle:
@@ -91,19 +90,6 @@ class DMCSimulation:
         plt.ylabel('Density')
         plt.show() 
 
-        kde = gaussian_kde(self.all_positions, bw_method=0.015)
-        x_grid = np.linspace(min(self.all_positions), max(self.all_positions), 1000)  # Adjust the range based on walker positions
-        kde_values = kde.evaluate(x_grid)
-
-        # Plotting the density of walkers
-        plt.figure(figsize=(10, 5))
-        plt.plot(x_grid, kde_values, color='blue', label='Walker Density')
-        plt.title("Walker Density")
-        plt.xlabel("x")
-        plt.ylabel("ρ(x)")
-        plt.grid(False)
-        plt.legend()
-        plt.show()
 
 
 
