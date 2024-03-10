@@ -3,90 +3,125 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import walkers as wlkrs
+
 class dmc:
     """DMC Simulation."""
     def __init__(self):
         # simulation parameters
-        self.timeStep = None
-        self.nTimeSteps = None
+        self.time_step = None
+        self.nStepsEq = None
+        self.nStepsProd = None
         self.nWalkers = None
 
-        self.walkerInitFunc = None
-        self.valFunc = None
-        self.diffuseFunc = None
+        self.val_func = None
+        self.diffuse_func = None
+        self.gen_func = None
 
         self.walkers = None
-        self.walkerPop = None
+        self.walker_counts = None
+        self.cur_walker_count = None
 
-        self.refVal = None
-        self.refVals = None
+        self.ref_val = None
+        self.ref_vals = None
 
-    def setParams(self, timeStep, nTimeSteps, nWalkers, walkerInitFunc, valFunc, diffuseFunc):
-        self.timeStep = timeStep
-        self.nTimeSteps = nTimeSteps
+    def setParams(self, time_step, nStepsEq, nStepsProd, nWalkers, val_func, diffuse_func, gen_func, walkers):
+        self.time_step = time_step
+        self.nStepsEq = nStepsEq
+        self.nStepsProd = nStepsProd
         self.nWalkers = nWalkers
 
-        self.walkerInitFunc = walkerInitFunc
-        self.valFunc = valFunc
-        self.diffuseFunc = diffuseFunc
+        self.val_func = val_func
+        self.diffuse_func = diffuse_func
+        self.gen_func = gen_func
+
+        self.walkers = walkers
 
     def init(self):
-        self.walkers = []
-        for i in range(self.nWalkers):
-            self.walkers.append(self.walkerInitFunc())
+        self.walkers.make(self.nWalkers, self.gen_func)
 
-        self.walkerPop = np.zeros(self.nTimeSteps+1)
-        self.walkerPop[0] = self.nWalkers
+        self.walker_counts = np.zeros(self.nStepsProd+1)
+        self.ref_vals = np.zeros(self.nStepsProd)
 
-        self.refVals = np.zeros(self.nTimeSteps)
+        self.cur_walker_count = self.walkers.nWalkers
 
     def penalty(self):
-        return (1.0-(len(self.walkers)/self.nWalkers))/(2.0*self.timeStep)
+        return (1.0-(self.cur_walker_count/self.nWalkers))/(2.0*self.time_step)
 
-    def getRefVal(self):
-        return np.mean([self.valFunc(walker) for walker in self.walkers]) + self.penalty()
+    def compute_ref_val(self):
+        return np.mean(self.val_func(self.walkers)) + self.penalty()
     
     def diffuse(self):
-        for walker in self.walkers:
-            self.diffuseFunc(walker) 
+        self.diffuse_func(self.walkers)
 
-    def adjustWalkerPopulation(self):
-        survivingWalkers = []
-        
-        for walker in self.walkers:
-            val = self.valFunc(walker)
+    def adjust_walker_population(self):        
+        idx = np.array(self.walkers.walkers_idx)
 
-            print(val)
-            print(self.refVal)
+        vals = self.val_func(self.walkers)
 
-            if val > self.refVal:
-                probabilityDelete = np.exp(-(val-self.refVal)*self.timeStep)
-                if probabilityDelete >= np.random.uniform():
-                    survivingWalkers.append(walker)
-            elif val < self.refVal:
-                survivingWalkers.append(walker)
-                probabilityReplicate = np.exp(-(val-self.refVal)*self.timeStep) - 1.0
-                if probabilityReplicate > np.random.uniform():
-                    newWalker = self.walkerInitFunc()
-                    newWalker.particles = dict(walker.particles)
-                    survivingWalkers.append(newWalker)
-            else:
-                survivingWalkers.append(walker)
+        greater_vals = vals[vals > self.ref_val]
+        greater_idx = idx[vals > self.ref_val]
 
-        self.walkers = survivingWalkers
+        prob_delete = np.exp(-(greater_vals-self.ref_val)*self.time_step)
+
+        delete_rand = np.random.uniform(0.0, 1.0, (greater_vals.size))
+        delete_idx = greater_idx[prob_delete < delete_rand]
+
+        lesser_vals = vals[vals < self.ref_val]
+        lesser_idx = idx[vals < self.ref_val]
+
+        prob_replicate = np.exp(-(lesser_vals-self.ref_val)*self.time_step) - 1.0
+
+        replicate_rand = np.random.uniform(0.0, 1.0, (lesser_vals.size))
+        replicate_idx = lesser_idx[prob_replicate > replicate_rand]
+
+        self.walkers.delete(delete_idx.tolist())
+        self.walkers.replicate(replicate_idx.tolist())
+
+    def equilibration(self):
+        for i in range(self.nStepsEq):
+            self.ref_val = self.compute_ref_val()
+            self.diffuse()
+            self.adjust_walker_population()
+
+            self.cur_walker_count = self.walkers.nWalkers
+
+    def production(self):
+        self.walker_counts[0] = self.walkers.nWalkers
+
+        for i in range(self.nStepsProd):
+            self.ref_val = self.compute_ref_val()
+            self.diffuse()
+            self.adjust_walker_population()
+
+            self.walker_counts[i+1] = self.walkers.nWalkers
+            self.ref_vals[i] = self.ref_val
+
+            self.cur_walker_count = self.walkers.nWalkers
                 
     def run(self):
         self.init()
+        self.equilibration()
+        self.production()
 
-        for i in range(self.nTimeSteps):
-            self.refVal = self.getRefVal()
-            self.diffuse()
-            self.adjustWalkerPopulation()
+    def visualize_ref_vals(self):
+        plt.plot(np.arange(self.ref_vals.size), self.ref_vals)
+        plt.plot(np.arange(self.ref_vals.size), self.mean_ref_val()*np.ones((self.ref_vals.size)))
+        plt.title('Reference Value vs. Time Step')
+        plt.xlabel('Time Step')
+        plt.ylabel('Reference Value')
+        plt.show()
 
-            self.walkerPop[i+1] = len(self.walkers)
-            self.refVals[i] = self.refVal
+    def visualize_walker_population(self):
+        plt.plot(np.arange(self.walker_counts.size), self.walker_counts)
+        plt.plot(np.arange(self.walker_counts.size), self.mean_walker_population()*np.ones((self.walker_counts.size)))
+        plt.title('Walker Count vs. Time Step')
+        plt.xlabel('Time Step')
+        plt.ylabel('Walker Count')
+        plt.show()
 
-    def visualizeRefVals(self):
-        fig, axes = plt.subplots(1, 1)
-        axes.plot(np.arange(0, len(self.refVals)), self.refVals)
-        fig.show()
+    def mean_ref_val(self):
+        return np.mean(self.ref_vals)
+    
+    def mean_walker_population(self):
+        return np.mean(self.walker_counts)
