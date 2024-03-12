@@ -7,9 +7,9 @@ from dmc import dmc
 
 ###  Simulation Parameters:  ###
 timeStep = 10.0 # atu
-nTimeStepsEq = 10000 # equilibration steps. number of steps over which to "relax" the system.
-nTimeStepsProd = 100000 # production steps. number of steps over which to compute an average reference value after equilibration.
-nWalkers = 1000
+nTimeStepsEq = 1000 # equilibration steps. number of steps over which to "relax" the system.
+nTimeStepsProd = 1000 # production steps. number of steps over which to compute an average reference value after equilibration.
+nWalkers = 10000
 
 ###  Specification of Potential Energy Function:  ###
     
@@ -45,8 +45,8 @@ def potentialEnergyFunction(walkers):
 def diffuseFunction(walkers):
     new_arr = walkers.to_arr()
 
-    new_arr[:, :, c] += np.random.normal(0.0, np.sqrt(1/walkers.particles2atomic['c']), new_arr[:, :, c].shape)
-    new_arr[:, :, o] += np.random.normal(0.0, np.sqrt(1/walkers.particles2atomic['o']), new_arr[:, :, o].shape)
+    new_arr[:, :, c] += np.random.normal(0.0, np.sqrt(timeStep/walkers.particles2atomic['c']), new_arr[:, :, c].shape)
+    new_arr[:, :, o] += np.random.normal(0.0, np.sqrt(timeStep/walkers.particles2atomic['o']), new_arr[:, :, o].shape)
 
     walkers.set_arr(new_arr)
 

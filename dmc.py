@@ -49,18 +49,24 @@ class dmc:
         return (1.0-(self.cur_walker_count/self.nWalkers))/(2.0*self.time_step)
 
     def compute_ref_val(self):
-        return np.mean(self.val_func(self.walkers)) + self.penalty()
+        r = np.mean(self.val_func(self.walkers)) + self.penalty()
+        # print(f'refVal is {r}\n')
+        return r
     
     def diffuse(self):
         self.diffuse_func(self.walkers)
+
+        # print(f'after diffusion:\n{self.walkers.to_arr()}\n')
 
     def adjust_walker_population(self):        
         idx = np.array(self.walkers.walkers_idx)
 
         vals = self.val_func(self.walkers)
 
+        # print(f'potential energies are:\n{vals}\n')
+
         greater_vals = vals[vals > self.ref_val]
-        greater_idx = idx[vals > self.ref_val]
+        greater_idx = idx[vals > self.ref_val]  
 
         prob_delete = np.exp(-(greater_vals-self.ref_val)*self.time_step)
 
@@ -77,6 +83,8 @@ class dmc:
 
         self.walkers.delete(delete_idx.tolist())
         self.walkers.replicate(replicate_idx.tolist())
+
+        # print(f'after population adjustment:\n{self.walkers.to_arr()}\n')
 
     def equilibration(self):
         for i in range(self.nStepsEq):
@@ -98,6 +106,8 @@ class dmc:
             self.ref_vals[i] = self.ref_val
 
             self.cur_walker_count = self.walkers.nWalkers
+
+            # print(f'walker count is {self.cur_walker_count}\n')
                 
     def run(self):
         self.init()
