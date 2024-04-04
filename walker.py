@@ -1,6 +1,5 @@
 """walker.py: Pass."""
 
-import dmc
 import particle as p
 
 class _walker:

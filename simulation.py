@@ -14,8 +14,11 @@ nWalkers = 10000
 ###  Specification of Potential Energy Function:  ###
     
 ###  Potential Energy Constants:  ###
-equilibriumPosition = 0.59707
-k = 1.2216
+equilibriumPosition = 5
+#k = 1.2216
+k = 1.0
+
+
 
 ###  Particle Indices:            ###
 c = 0
@@ -55,7 +58,8 @@ def genFunction(count):
     return pos
 
 ###  Specification of Walkers:  ###  
-particles2mass = {'c': 12.0000, 'o': 15.995} # g/mole
+#particles2mass = {'c': 12.0000, 'o': 15.995} # g/mole
+particles2mass = {'c': 10.0, 'o': 10.0} # g/mole
 
 walkers = wlkrs.Walkers()
 

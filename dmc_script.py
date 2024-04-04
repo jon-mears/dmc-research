@@ -71,12 +71,12 @@ result = doMCSteps()
 h, binArray, vrefs, Walkers, hvals, cum_avg_vrefs, diffs = result
 
 # Plotting the final distribution of walkers
-'''plt.figure(figsize=(10, 5))
+plt.figure(figsize=(10, 5))
 plt.bar(binArray[:-1], h, width=(binArray[1] - binArray[0]), color='blue', alpha=0.7)
 plt.title("Final Distribution of Walkers")
 plt.xlabel("Position")
 plt.ylabel("Count")
-plt.show()'''
+plt.show()
 
 # Plotting the evolution of reference energy
 plt.figure(figsize=(10, 5))

@@ -52,7 +52,7 @@ class DMCSimulation:
                 pe = self.potential_energy(particle.position)
                 prob_delete = np.exp(-(pe - reference_energy) * self.dt)
                 prob_replicate = np.exp(-(pe - reference_energy) * self.dt) - 1.0
-                print(prob_delete, prob_replicate)
+                print(prob_delete, "    ",prob_replicate)
                 rand_num = np.random.rand()
 
                 if prob_delete >= rand_num:

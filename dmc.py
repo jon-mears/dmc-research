@@ -114,21 +114,46 @@ class dmc:
         self.equilibration()
         self.production()
 
-    def visualize_ref_vals(self):
+    ''' def visualize_ref_vals(self):
         plt.plot(np.arange(self.ref_vals.size), self.ref_vals)
         plt.plot(np.arange(self.ref_vals.size), self.mean_ref_val()*np.ones((self.ref_vals.size)))
         plt.title('Reference Value vs. Time Step')
         plt.xlabel('Time Step')
         plt.ylabel('Reference Value')
+        plt.show()'''
+
+    def visualize_ref_vals(self):
+        plt.hist(self.ref_vals, bins='auto')
+        plt.title('Histogram of Reference Values')
+        plt.xlabel('Reference Value')
+        plt.ylabel('Frequency')
+
+        convergence_point = np.mean(self.ref_vals)  # or any specific convergence value
+        plt.axvline(convergence_point, color='r', linestyle='dashed', linewidth=2)
+        plt.text(convergence_point, plt.ylim()[1]*0.8, f'Convergence at {convergence_point}', ha='right')
+
         plt.show()
 
     def visualize_walker_population(self):
+        plt.hist(self.walker_counts, bins=30)
+        plt.title('Histogram of Walker Counts')
+        plt.xlabel('Walker Count')
+        plt.ylabel('Frequency')
+        convergence_point = np.mean(self.walker_counts)  # or any specific convergence value
+        plt.axvline(convergence_point, color='r', linestyle='dashed', linewidth=2)
+        plt.text(convergence_point, plt.ylim()[1]*0.8, f'Convergence at {convergence_point}', ha='right')
+
+        plt.show()
+
+
+
+    ''' def visualize_walker_population(self):
         plt.plot(np.arange(self.walker_counts.size), self.walker_counts)
         plt.plot(np.arange(self.walker_counts.size), self.mean_walker_population()*np.ones((self.walker_counts.size)))
         plt.title('Walker Count vs. Time Step')
         plt.xlabel('Time Step')
         plt.ylabel('Walker Count')
-        plt.show()
+        plt.show()'''
 
     def mean_ref_val(self):
         return np.mean(self.ref_vals)
