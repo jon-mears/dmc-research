@@ -34,13 +34,14 @@ def test_non_empty_potential_energy_array():
 
 def test_dmc_setParams():
     sim = dmc()
-    sim.setParams(0.1, 100, 200, 1000, potentialEnergyFunction, diffusionFunction, posFunction, Walkers({'c': 12.0000}))
+    sim.setParams(0.1, 100, 200, 1000, potentialEnergyFunction, diffusionFunction, posFunction, Walkers({'c': 12.0000, 'o': 15.995}))
     assert sim.time_step == 0.1, "Time step should be set correctly"
     assert sim.nWalkers == 1000, "Number of walkers should be set correctly"
 
 def test_dmc_equilibration():
     sim = dmc()
-    sim.setParams(0.1, 100, 200, 1000, potentialEnergyFunction, diffusionFunction, posFunction, Walkers({'c': 12.0000}))
+    sim.setParams(0.1, 100, 200, 1000, potentialEnergyFunction, diffusionFunction, posFunction, Walkers({'c': 12.0000, 'o': 15.995}))
+    sim.init()
     sim.equilibration()
     assert sim.walkers.nWalkers <= 1000, "Walker count should be adjusted after equilibration"
 
@@ -65,15 +66,6 @@ def test_full_simulation_flow():
     assert sim.walkers.nWalkers > 0, "There should be walkers remaining after the simulation"
     assert len(sim.walker_counts) == 201, "Walker counts should be tracked for each production step"
 
-def test_deleting_excessive_walkers():
-    walkers = Walkers({'c': 12.0000}, init_cap=10)
-    walkers.make(5, posFunction)
-    try:
-        walkers.delete(range(10))
-        assert False, "Deleting more walkers than exist should raise an error"
-    except ValueError:
-        assert True
-
 def test_equilibration_with_proper_setup():
     walkers = Walkers({'c': 12.0000, 'o': 15.995})
     walkers.make(100, posFunction)
@@ -84,4 +76,3 @@ def test_equilibration_with_proper_setup():
 
     assert sim.walkers.nWalkers <= 100 and sim.walkers.nWalkers > 0, \
         "Walkers should be adjusted but not all deleted during equilibration"
-

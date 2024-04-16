@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Walkers:
-    def __init__(self, particles2mass, init_cap=10000):
+    def __init__(self, particles2mass, molecules2counts, init_cap=10000):
         '''
         Walkers constructor.
 
@@ -27,11 +27,16 @@ class Walkers:
         # dictionary. string -> float. maps particle names to mass in g/mole.
         self.particles2mass = dict()
 
+        self.molecules2counts = molecules2counts
+
         # list of string. all names of particles in the system.
         self.particles = list()
 
         # dictionary. string -> float. maps particle names to mass in amu.
         self.particles2atomic = dict()
+
+        self.ptclidx = dict()
+        self.mlclidx = dict()
 
         # register each of the system's particles
         for ptcl in particles2mass:
@@ -47,6 +52,11 @@ class Walkers:
 
         # float. the reduced mass of the system in amu.
         self.rmass = prod/sum
+
+        self.nMolecules = 0
+        self.nParticles = 0
+
+        self.register_molecules()
         
         # list of int. indices of current active walkers within the internal ndarray `arr`.
         self.walkers_idx = []
@@ -62,7 +72,7 @@ class Walkers:
 
         # ndarray. shape=(self.cap, 3, nParticles). the internal ndarray that contains a description of the walkers, i.e., 
         # several arrangements of Cartesian positions of the particles in the system.
-        self.arr = np.zeros((self.cap, 3, len(self.particles)))
+        self.arr = np.zeros((self.cap, self.nMolecules, 3, self.nParticles))
 
     def register_particle(self, name, mass):
         '''
@@ -81,6 +91,41 @@ class Walkers:
         # compute the atomic mass of the particle, and create an entry for the particle in the amu dictionary 
         # of this object
         self.particles2atomic[name] = mass/(6.02213670000e23*9.10938970000e-28)
+
+    def register_molecules(self):
+        m_idx = 0
+        max_ptcls = 0
+        for mlcl in self.molecules2counts:
+            total_ptcls = 0
+            p_idx = 0
+            chi = 0
+            while chi != len(mlcl):
+                chj = chi + 1
+                chk = None # record the start of numeric data
+                while chj != len(mlcl) and (mlcl[chj].isnumeric() or mlcl[chj].islower()):
+                    if mlcl[chj].isnumeric() and chk is None:
+                        chk = chj
+                    chj += 1
+
+                if chk is not None:
+                    ptcl_name = mlcl[chi:chk]
+                    ptcl_count = int(mlcl[chk:chj])
+                else:
+                    ptcl_name = mlcl[chi:chj]
+                    ptcl_count = 1
+
+                self.ptclidx[mlcl + ' ' + ptcl_name] = list(range(p_idx, p_idx+ptcl_count))
+
+                p_idx += ptcl_count
+                total_ptcls += ptcl_count
+                chi = chj
+            self.nMolecules += self.molecules2counts[mlcl]
+            self.mlclidx[mlcl] = list(range(m_idx, m_idx + self.molecules2counts[mlcl]))
+            m_idx += self.molecules2counts[mlcl]
+
+            if total_ptcls > max_ptcls:
+                max_ptcls = total_ptcls
+        self.nParticles = max_ptcls
 
     def to_arr(self):
         '''return the current "active walkers" stored in `arr`.'''
@@ -312,8 +357,6 @@ class dmc:
             self.ref_vals[i] = self.ref_val
 
             self.cur_walker_count = self.walkers.nWalkers
-
-            # print(f'walker count is {self.cur_walker_count}\n')
                 
     def run(self):
         self.init()
@@ -334,29 +377,6 @@ class dmc:
         plt.title('Walker Count vs. Time Step')
         plt.xlabel('Time Step')
         plt.ylabel('Walker Count')
-        plt.show()
-
-    def hist_walker_population(self):
-        plt.hist(self.walker_counts, bins=30)
-        plt.title('Histogram of Walker Counts')
-        plt.xlabel('Walker Count')
-        plt.ylabel('Frequency')
-        convergence_point = np.mean(self.walker_counts)  # or any specific convergence value
-        plt.axvline(convergence_point, color='r', linestyle='dashed', linewidth=2)
-        plt.text(convergence_point, plt.ylim()[1]*0.8, f'Convergence at {convergence_point}', ha='right')
-
-        plt.show()
-
-    def hist_ref_vals(self):
-        plt.hist(self.ref_vals, bins='auto')
-        plt.title('Histogram of Reference Values')
-        plt.xlabel('Reference Value')
-        plt.ylabel('Frequency')
-
-        convergence_point = np.mean(self.ref_vals)  # or any specific convergence value
-        plt.axvline(convergence_point, color='r', linestyle='dashed', linewidth=2)
-        plt.text(convergence_point, plt.ylim()[1]*0.8, f'Convergence at {convergence_point}', ha='right')
-
         plt.show()
 
     def mean_ref_val(self):
@@ -414,6 +434,10 @@ nWalkers = 10000
 
 # particle name -> mass g/mole
 particles2mass = {'h1': 1.007825, 'h2': 1.007825, 'o': 15.99491461957}
+
+# molecule name (should be comprised of names of particles above, each possibly followed by a count) ->
+#   count of molecule in system
+molecules2counts = {'h2o': 5}
 
 nParticles = len(particles2mass)
 
@@ -529,7 +553,4 @@ if __name__ == '__main__':
     sim.visualize_ref_vals()
     sim.visualize_walker_population()
 
-    sim.hist_ref_vals()
-    sim.hist_walker_population()
-
-    print(f'simulation converges approx. to {sim.mean_ref_val()}')
+    print(f'simulation should converge to {(1/2)*1*np.sqrt((kl)/walkers.reduced_mass())} and converges approx. to {sim.mean_ref_val()}')

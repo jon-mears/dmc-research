@@ -160,13 +160,10 @@ class dmc:
 
     def compute_ref_val(self):
         r = np.mean(self.val_func(self.walkers)) + self.penalty()
-        # print(f'refVal is {r}\n')
         return r
 
     def diffuse(self):
         self.diffuse_func(self.walkers)
-
-        # print(f'after diffusion:\n{self.walkers.to_arr()}\n')
 
     def adjust_walker_population(self):        
         idx = np.array(self.walkers.walkers_idx)
